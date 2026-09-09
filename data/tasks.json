@@ -1,0 +1,388 @@
+{
+  "task-test-2026-001": {
+    "status": "COMPLETED",
+    "result": {
+      "task_id": "task-test-2026-001",
+      "status": "SUCCESS",
+      "summary": "Completed diagnosis and optimization for Normal Performance",
+      "before": {
+        "timestamp": "2026-09-02T21:00:18.671696",
+        "measurement_window_sec": 5,
+        "cpu_usage_percent": 4.38,
+        "memory_usage_percent": 79.76,
+        "memory_total_gb": 3.73,
+        "memory_available_gb": 0.76,
+        "disk_usage_percent": 42.8,
+        "disk_free_gb": 59.94,
+        "top_processes": [
+          {
+            "pid": 5759,
+            "memory_percent": 9.783836094354681,
+            "cpu_percent": 0.0,
+            "name": "code"
+          },
+          {
+            "pid": 6707,
+            "memory_percent": 7.776607126981094,
+            "cpu_percent": 0.0,
+            "name": "code"
+          },
+          {
+            "pid": 2138,
+            "memory_percent": 7.14721484462421,
+            "cpu_percent": 0.0,
+            "name": "node"
+          },
+          {
+            "pid": 5806,
+            "memory_percent": 6.73487552666512,
+            "cpu_percent": 0.0,
+            "name": "code"
+          },
+          {
+            "pid": 5704,
+            "memory_percent": 5.751699175219174,
+            "cpu_percent": 0.0,
+            "name": "code"
+          }
+        ],
+        "startup_programs": [],
+        "services": []
+      },
+      "after": {
+        "timestamp": "2026-09-02T21:00:29.913146",
+        "measurement_window_sec": 5,
+        "cpu_usage_percent": 2.22,
+        "memory_usage_percent": 80.16,
+        "memory_total_gb": 3.73,
+        "memory_available_gb": 0.74,
+        "disk_usage_percent": 42.8,
+        "disk_free_gb": 59.94,
+        "top_processes": [
+          {
+            "pid": 5759,
+            "memory_percent": 9.783836094354681,
+            "cpu_percent": 0.4,
+            "name": "code"
+          },
+          {
+            "pid": 6707,
+            "memory_percent": 7.776607126981094,
+            "cpu_percent": 0.0,
+            "name": "code"
+          },
+          {
+            "pid": 2138,
+            "memory_percent": 7.184105673318938,
+            "cpu_percent": 20.4,
+            "name": "node"
+          },
+          {
+            "pid": 5806,
+            "memory_percent": 6.73487552666512,
+            "cpu_percent": 0.8,
+            "name": "code"
+          },
+          {
+            "pid": 5704,
+            "memory_percent": 5.774589883328922,
+            "cpu_percent": 0.4,
+            "name": "code"
+          }
+        ],
+        "startup_programs": [],
+        "services": []
+      },
+      "actions": [
+        {
+          "action": "clean_temp",
+          "target": "routine_cleanup",
+          "status": "SUCCESS",
+          "message": "Cleaned temp files. Deleted: 16, Failed: 0",
+          "risk_level": 1
+        }
+      ],
+      "analysis": {
+        "problem": "Normal Performance",
+        "root_cause": "No critical bottlenecks detected",
+        "actions": [
+          {
+            "name": "clean_temp",
+            "target": "routine_cleanup",
+            "risk_level": 1
+          }
+        ]
+      }
+    }
+  },
+  "task-pcp-2026-001": {
+    "status": "COMPLETED",
+    "result": {
+      "task_id": "task-pcp-2026-001",
+      "status": "SUCCESS",
+      "summary": "Completed diagnosis and optimization for Normal Performance",
+      "before": {
+        "os": "linux",
+        "timestamp": "2026-09-06T16:38:55.258059",
+        "measurement_window_sec": 5,
+        "cpu_usage_percent": 40.52,
+        "memory_usage_percent": 61.06,
+        "memory_total_gb": 3.73,
+        "memory_available_gb": 1.5,
+        "disk_usage_percent": 42.5,
+        "disk_free_gb": 60.17,
+        "top_processes": [
+          {
+            "pid": 55668,
+            "name": "chrome",
+            "memory_percent": 14.945077629135783,
+            "cpu_percent": 0.0
+          },
+          {
+            "pid": 54895,
+            "name": "node",
+            "memory_percent": 14.927705216731063,
+            "cpu_percent": 0.0
+          },
+          {
+            "pid": 55954,
+            "name": "chrome",
+            "memory_percent": 6.6739698925873965,
+            "cpu_percent": 0.0
+          },
+          {
+            "pid": 55710,
+            "name": "chrome",
+            "memory_percent": 5.0415762705109435,
+            "cpu_percent": 0.0
+          },
+          {
+            "pid": 55743,
+            "name": "chrome",
+            "memory_percent": 3.7368059082552683,
+            "cpu_percent": 0.0
+          }
+        ],
+        "startup_programs": [],
+        "services": [
+          {
+            "name": "accounts-daemon.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "AppProtectionService-install.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "avahi-daemon.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "bluetooth.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "bolt.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "cron.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "ctxcwalogd.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "dbus.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "earlyoom.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "fwupd.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "iio-sensor-proxy.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "inetutils-inetd.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "mbair-backlight.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "NetworkManager-dispatcher.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "NetworkManager.service",
+            "display_name": "running",
+            "status": "running"
+          }
+        ]
+      },
+      "after": {
+        "os": "linux",
+        "timestamp": "2026-09-06T16:39:05.441458",
+        "measurement_window_sec": 5,
+        "cpu_usage_percent": 38.54,
+        "memory_usage_percent": 60.98,
+        "memory_total_gb": 3.73,
+        "memory_available_gb": 1.47,
+        "disk_usage_percent": 42.5,
+        "disk_free_gb": 60.17,
+        "top_processes": [
+          {
+            "pid": 54895,
+            "name": "node",
+            "memory_percent": 15.262379632174932,
+            "cpu_percent": 6.1
+          },
+          {
+            "pid": 55668,
+            "name": "chrome",
+            "memory_percent": 14.956625173851862,
+            "cpu_percent": 6.9
+          },
+          {
+            "pid": 55954,
+            "name": "chrome",
+            "memory_percent": 6.835226755967678,
+            "cpu_percent": 36.4
+          },
+          {
+            "pid": 55710,
+            "name": "chrome",
+            "memory_percent": 5.074277282096299,
+            "cpu_percent": 70.1
+          },
+          {
+            "pid": 55743,
+            "name": "chrome",
+            "memory_percent": 3.720353211801386,
+            "cpu_percent": 0.0
+          }
+        ],
+        "startup_programs": [],
+        "services": [
+          {
+            "name": "accounts-daemon.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "AppProtectionService-install.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "avahi-daemon.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "bluetooth.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "bolt.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "cron.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "ctxcwalogd.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "dbus.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "earlyoom.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "fwupd.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "iio-sensor-proxy.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "inetutils-inetd.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "mbair-backlight.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "NetworkManager.service",
+            "display_name": "running",
+            "status": "running"
+          },
+          {
+            "name": "polkit.service",
+            "display_name": "running",
+            "status": "running"
+          }
+        ]
+      },
+      "actions": [
+        {
+          "action": "clean_temp",
+          "target": "routine_cleanup",
+          "status": "SUCCESS",
+          "message": "Linux /tmp cleaned. Deleted: 27, Failed: 0",
+          "risk_level": 1
+        }
+      ],
+      "analysis": {
+        "problem": "Normal Performance",
+        "root_cause": "No critical bottlenecks detected",
+        "actions": [
+          {
+            "name": "clean_temp",
+            "target": "routine_cleanup",
+            "risk_level": 1
+          }
+        ]
+      }
+    }
+  }
+}

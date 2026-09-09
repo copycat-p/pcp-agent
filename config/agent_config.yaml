@@ -1,0 +1,28 @@
+agent:
+  id: "agent-win-001"
+  name: "Windows PC Performance AI Agent"
+  auth_token: "secret-agent-token-12345"
+  host: "0.0.0.0"
+  port: 8765
+
+security:
+  allowed_actions:
+    - "clean_temp"
+    - "clean_recycle_bin"
+    - "collect_diagnostics"
+  approval_required_actions:
+    - "disable_startup_program"
+    - "stop_service"
+    - "clean_windows_update_cache"
+    - "stop_user_process"
+
+llm:
+  default_provider: "goo"
+  model: "gemini-3.5-flash-lite"
+  timeout_sec: 15
+  max_retries: 3
+  backoff_base_sec: 5
+
+resilience:
+  task_persistence_path: "./data/tasks.json"
+  result_buffer_path: "./data/result_buffer.json"
