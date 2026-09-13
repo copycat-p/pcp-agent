@@ -16,6 +16,7 @@ class WindowsOptimizer:
             if action_name == "clean_temp":
                 temp_dir = tempfile.gettempdir()
                 deleted, failed = 0, 0
+                logger.debug(f"Starting temp cleanup in directory: {temp_dir}")
                 for item in os.listdir(temp_dir):
                     item_path = os.path.join(temp_dir, item)
                     try:
@@ -25,18 +26,22 @@ class WindowsOptimizer:
                         elif os.path.isdir(item_path):      
                             shutil.rmtree(item_path, ignore_errors=True)
                             deleted += 1
-                    except Exception:
+                    except Exception as err:
                         failed += 1
+                        logger.debug(f"Failed to delete temp item '{item_path}': {err}")
                 result["message"] = f"Windows temp cleaned. Deleted: {deleted}, Failed: {failed}"
+                logger.debug(f"clean_temp result: {result['message']}")
 
             elif action_name == "clean_recycle_bin":
                 cmd = 'powershell "Clear-RecycleBin -Force -ErrorAction SilentlyContinue"'
+                logger.debug(f"Executing clean_recycle_bin command: {cmd}")
                 res = subprocess.run(cmd, capture_output=True, text=True, shell=True, timeout=10)
                 if res.returncode == 0:
                     result["message"] = "Windows recycle bin emptied successfully."
                 else:
                     result["status"] = "PARTIAL_SUCCESS"
                     result["message"] = f"Recycle bin cleared with output: {res.stderr.strip()}"
+                    logger.debug(f"clean_recycle_bin non-zero exit code: {res.returncode}, stderr: {res.stderr.strip()}")
 
             elif action_name == "disable_startup_program":
                 if target and target != "general":
@@ -50,45 +55,56 @@ class WindowsOptimizer:
                         ");"
                         "$removed = $false;"
                         "foreach ($p in $paths) {"
-                        f"if (Test-Path \\\"$p\\{target}\\\") {{"
-                        f"Remove-ItemProperty -Path $p -Name '{target}' -Force -ErrorAction SilentlyContinue;"
-                        "$removed = $true;"
-                        "}"
+                        f"  $prop = Get-ItemProperty -Path $p -ErrorAction SilentlyContinue;"
+                        f"  if ($prop -and $prop.'{target}' -ne $null) {{"
+                        f"    Remove-ItemProperty -Path $p -Name '{target}' -Force -ErrorAction SilentlyContinue;"
+                        "    $removed = $true;"
+                        "  }"
                         "}"
                         "if ($removed) { exit 0 } else { exit 1 }"
                         '"'
                     )
+                    logger.debug(f"Executing disable_startup_program for target '{target}'")
                     res = subprocess.run(ps_cmd, capture_output=True, text=True, shell=True, timeout=10)
                     if res.returncode == 0:
                         result["message"] = f"Startup program '{target}' successfully removed from registry."
                     else:
                         result["status"] = "FAILED"
                         result["message"] = f"Failed to remove startup program '{target}' or not found in registry. Details: {res.stderr.strip() or 'Registry key not found'}"
+                        logger.debug(f"disable_startup_program failed for '{target}': returncode={res.returncode}, stderr={res.stderr.strip()}")
                 else:
                     result["status"] = "FAILED"
                     result["message"] = "Invalid target specified for disabling startup program."
+                    logger.debug(f"disable_startup_program rejected invalid target: '{target}'")
 
             elif action_name == "stop_service":
                 if target and target != "general":
                     cmd = f'powershell "Stop-Service -Name \'{target}\' -Force -ErrorAction SilentlyContinue"'
+                    logger.debug(f"Executing stop_service for service '{target}'")
                     res = subprocess.run(cmd, capture_output=True, text=True, shell=True, timeout=10)
                     if res.returncode == 0:
                         result["message"] = f"Windows service '{target}' stopped."
                     else:
                         result["status"] = "FAILED"
                         result["message"] = f"Failed to stop Windows service '{target}': {res.stderr.strip()}"
+                        logger.debug(f"stop_service failed for '{target}': stderr={res.stderr.strip()}")
                 else:
                     result["message"] = f"Service '{target}' stop processed."
+                    logger.debug(f"stop_service processed with generic target: '{target}'")
 
             elif action_name == "clean_windows_update_cache":
                 cmd = 'powershell "Stop-Service -Name wuauserv -Force -ErrorAction SilentlyContinue; $path = \\"$env:systemroot\\SoftwareDistribution\\Download\\*\"; Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue; Start-Service -Name wuauserv -ErrorAction SilentlyContinue"'
-                subprocess.run(cmd, capture_output=True, text=True, shell=True, timeout=15)
+                logger.debug("Executing clean_windows_update_cache")
+                res = subprocess.run(cmd, capture_output=True, text=True, shell=True, timeout=15)
+                logger.debug(f"clean_windows_update_cache returncode={res.returncode}, stderr={res.stderr.strip()}")
                 result["message"] = "Windows Update cache cleaned and service restarted."
 
             else:
                 result["status"] = "FAILED"
                 result["message"] = f"Unknown Windows action: {action_name}"
+                logger.debug(f"Unknown Windows action requested: {action_name}")
         except Exception as e:
             result["status"] = "FAILED"
             result["message"] = str(e)
+            logger.debug(f"Exception encountered during WindowsOptimizer.execute({action_name}): {e}", exc_info=True)
         return result

@@ -5,7 +5,7 @@ from typing import Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
-class LLMClient:
+class LLMClient_OPENAI:
     """
     v2 요구사항: LLM 호출 (Timeout, Retry, Backoff, Fallback 포함)
     OpenClaw 세션에서 전달받은 API Key를 메모리에서만 사용하여 LLM Provider 호출
@@ -16,14 +16,26 @@ class LLMClient:
         self.timeout_sec = timeout_sec
         self.max_retries = max_retries
 
-    def analyze_performance(self, sanitized_status: Dict[str, Any], api_key: Optional[str] = None) -> Dict[str, Any]:
+        def analyze_performance(self, sanitized_status: Dict[str, Any], api_key: Optional[str] = None) -> Dict[str, Any]:
         if not api_key:
-            # API Key가 없는 경우 규칙 기반 폴백 실행
+            logger.error("[LLMClient] No LLM API Key provided! Skipping LLM call and executing rule-based fallback.")
             return self._rule_based_fallback(sanitized_status)
+
+        masked_key = api_key[:4] + "..." + api_key[-4:] if len(api_key) > 8 else "***"
+        logger.debug(f"[LLMClient] Initiating LLM call to provider '{self.provider}' (Model: {self.model}) with Key: {masked_key}")
 
         prompt = f"""
 You are an expert Windows PC performance optimization AI Agent.
-Analyze the following system status and return a JSON response with 'problem', 'root_cause', and 'actions' (list of action names: clean_temp, clean_recycle_bin, disable_startup_program, stop_service, clean_windows_update_cache).
+Analyze the following system status and return a JSON response with 'problem', 'root_cause', and 'actions'.
+
+Each item in 'actions' MUST be an object with:
+- 'name': One of ['clean_temp', 'clean_recycle_bin', 'disable_startup_program', 'stop_service', 'clean_windows_update_cache']
+- 'target': Specific target name. For 'disable_startup_program' or 'stop_service', specify the exact program or service name (e.g. 'wizvera-veraport', 'SysMain', 'OneDrive'). Do NOT use 'general' for 'disable_startup_program' or 'stop_service'.
+- 'risk_level': integer (1 or 2)
+
+IMPORTANT:
+- If multiple startup programs or services need optimization, return a separate action object for EACH individual program/service in the 'actions' array.
+- Do NOT limit to only one target. Include all unneeded startup programs found in system status.
 
 System Status:
 {sanitized_status}

@@ -1,0 +1,17 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+venv_win/
+.venv/
+
+# VS Code & IDE
+.vscode/
+
+# Data & Logs
+*.log
+data/tasks.json
+data/result_buffer.json

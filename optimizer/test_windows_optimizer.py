@@ -1,32 +1,28 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from pcp_ai_agent.optimizer.windows_optimizer import WindowsOptimizer
+from optimizer.windows_optimizer import WindowsOptimizer
 
 class TestWindowsOptimizer(unittest.TestCase):
 
     @patch('subprocess.run')
     def test_disable_startup_program_general(self, mock_subprocess):
-        # Mock successful powershell execution returning removed items
         mock_res = MagicMock()
-        mock_res.returncode = 0
-        mock_res.stdout = "wizvera-veraport, AhnLab Safe Transaction"
+        mock_res.returncode = 1
         mock_subprocess.return_value = mock_res
 
         res = WindowsOptimizer.execute("disable_startup_program", "general")
-        self.assertEqual(res["status"], "SUCCESS")
-        self.assertIn("wizvera-veraport", res["message"])
-        self.assertIn("AhnLab Safe Transaction", res["message"])
+        self.assertEqual(res["status"], "FAILED")
+        self.assertIn("Invalid target", res["message"])
 
     @patch('subprocess.run')
     def test_disable_startup_program_empty_target(self, mock_subprocess):
         mock_res = MagicMock()
         mock_res.returncode = 1
-        mock_res.stdout = ""
         mock_subprocess.return_value = mock_res
 
         res = WindowsOptimizer.execute("disable_startup_program", "")
-        self.assertEqual(res["status"], "SUCCESS")
-        self.assertIn("No common unneeded startup programs", res["message"])
+        self.assertEqual(res["status"], "FAILED")
+        self.assertIn("Invalid target", res["message"])
 
     @patch('subprocess.run')
     def test_disable_startup_program_specific(self, mock_subprocess):
@@ -50,3 +46,4 @@ class TestWindowsOptimizer(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

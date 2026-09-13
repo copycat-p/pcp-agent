@@ -30,6 +30,11 @@ class SessionManager:
     def create_session(self, task_id: str, llm_api_key: Optional[str]) -> SessionContext:
         session = SessionContext(task_id, llm_api_key)
         self.sessions[task_id] = session
+        if llm_api_key:
+            masked_key = llm_api_key[:4] + "..." + llm_api_key[-4:] if len(llm_api_key) > 8 else "***"
+            logger.debug(f"[{task_id}] Session created with LLM API Key (Masked: {masked_key})")
+        else:
+            logger.warning(f"[{task_id}] Session created WITHOUT LLM API Key. LLM features will fall back to rule-based engine!")
         return session
 
     def get_session(self, task_id: str) -> Optional[SessionContext]:

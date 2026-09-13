@@ -76,21 +76,28 @@ async def diagnose(req: RunTaskRequest, authorization: Optional[str] = Header(No
     task_persistence.save_task(req.task_id, {"status": "RUNNING", "step": "diagnosing"})
 
     try:
-        # 1. 상태 수집 (구간 평균)
+                # 1. 상태 수집 (구간 평균)
+        logger.debug(f"[{req.task_id}] Collecting system status metrics...")
         before_status = aggregator.collect_system_status()
+        logger.debug(f"[{req.task_id}] System status collected: CPU={before_status.get('cpu_usage_percent')}%, MEM={before_status.get('memory_usage_percent')}%, DISK={before_status.get('disk_usage_percent')}%")
 
         # 2. 프라이버시 필터 적용
         sanitized = privacy_filter.sanitize(before_status)
+        logger.debug(f"[{req.task_id}] Sanitized system status for LLM/Rule-Engine processing.")
 
         # 3. LLM 분석 (또는 폴백)
+        logger.debug(f"[{req.task_id}] Requesting performance analysis from LLM/Fallback...")
         analysis = llm_client.analyze_performance(sanitized, api_key=session.llm_api_key)
+        logger.debug(f"[{req.task_id}] Raw analysis result received: {analysis}")
 
         # 방어 코드: analysis가 딕셔너리가 아닌 경우 처리
         if isinstance(analysis, str):
+            logger.debug(f"[{req.task_id}] Analysis result returned as string, attempting JSON parse...")
             try:
                 import json
                 analysis = json.loads(analysis)
-            except Exception:
+            except Exception as parse_err:
+                logger.debug(f"[{req.task_id}] Failed to parse analysis JSON string: {parse_err}")
                 analysis = {
                     "problem": "Analysis Error",
                     "root_cause": "LLM returned invalid string format",
@@ -98,28 +105,70 @@ async def diagnose(req: RunTaskRequest, authorization: Optional[str] = Header(No
                 }
         
         if not isinstance(analysis, dict):
+            logger.debug(f"[{req.task_id}] Analysis result was not a dict (type: {type(analysis)}), replacing with default action.")
             analysis = {
                 "problem": "Analysis Error",
                 "root_cause": "LLM returned non-dict format",
                 "actions": [{"name": "clean_temp", "target": "temp", "risk_level": 1}]
             }
 
-        # 사용자가 --approve로 명시 승인한 액션이 분석 결과에 없다면 강제 추가
-        if req.approved_actions:
-            existing_actions = set()
-            for a in analysis.get("actions", []):
-                if isinstance(a, str):
-                    existing_actions.add(a)
-                elif isinstance(a, dict) and "name" in a:
-                    existing_actions.add(a["name"])
-            
-            for approved in req.approved_actions:
-                if approved not in existing_actions:
-                    analysis.setdefault("actions", []).append({
-                        "name": approved,
-                        "target": "general",
-                        "risk_level": 2
-                    })
+            # 사용자가 --approve로 명시 승인한 액션이 분석 결과에 없다면 동적으로 모든 실제 대상 지정 후 추가
+            if req.approved_actions:
+                logger.debug(f"[{req.task_id}] User approved actions: {req.approved_actions}")
+                existing_actions = set()
+                for a in analysis.get("actions", []):
+                    if isinstance(a, str):
+                        existing_actions.add(a)
+                    elif isinstance(a, dict) and "name" in a:
+                        existing_actions.add(a["name"])
+        
+                for approved in req.approved_actions:
+                    if approved not in existing_actions:
+                        # 1) 시작 프로그램 차단 승인 시: 시스템에 존재하는 모든 시작 프로그램 항목을 각각 추가
+                        if approved == "disable_startup_program":
+                            startups = before_status.get("startup_programs", [])
+                            if startups:
+                                for item in startups:
+                                    name = item.get("name") if isinstance(item, dict) else str(item)
+                                    if name and name != "Unknown":
+                                        logger.debug(f"[{req.task_id}] Adding approved startup disable target: '{name}'")
+                                        analysis.setdefault("actions", []).append({
+                                            "name": approved,
+                                            "target": name,
+                                            "risk_level": 2
+                                        })
+                            else:
+                                analysis.setdefault("actions", []).append({
+                                    "name": approved,
+                                    "target": "general",
+                                    "risk_level": 2
+                                })
+
+                        # 2) 서비스 중지 승인 시: 시스템에 존재하는 주요 서비스 항목 추가
+                        elif approved == "stop_service":
+                            services = before_status.get("services", [])
+                            if services:
+                                for s in services[:5]: # 최대 5개 서비스 대상
+                                    sname = s.get("name") if isinstance(s, dict) else str(s)
+                                    if sname:
+                                        logger.debug(f"[{req.task_id}] Adding approved service stop target: '{sname}'")
+                                        analysis.setdefault("actions", []).append({
+                                            "name": approved,
+                                            "target": sname,
+                                            "risk_level": 2
+                                        })
+                            else:
+                                analysis.setdefault("actions", []).append({
+                                    "name": approved,
+                                    "target": "general",
+                                    "risk_level": 2
+                                })
+                        else:
+                            analysis.setdefault("actions", []).append({
+                                "name": approved,
+                                "target": "general",
+                                "risk_level": 1
+                            })
 
         # 4. 개선 계획 실행 (Self-Correction & Policy 검증)
         actions_result = []
@@ -131,13 +180,16 @@ async def diagnose(req: RunTaskRequest, authorization: Optional[str] = Header(No
                 action_name = action_def.get("name")
                 target = action_def.get("target", "general")
             else:
+                logger.debug(f"[{req.task_id}] Skipping invalid action definition: {action_def}")
                 continue
 
             if not action_name:
                 continue
             
             validation = action_policy.validate_action(action_name)
+            logger.debug(f"[{req.task_id}] Action policy validation for '{action_name}': {validation}")
             if validation["requires_approval"] and action_name not in (req.approved_actions or []):
+                logger.debug(f"[{req.task_id}] Action '{action_name}' requires approval but was not pre-approved. Setting to PENDING_APPROVAL.")
                 actions_result.append({
                     "action": action_name,
                     "status": "PENDING_APPROVAL",
@@ -149,22 +201,29 @@ async def diagnose(req: RunTaskRequest, authorization: Optional[str] = Header(No
             snapshot_id = None
             if validation["risk_level"] >= 2:
                 snapshot_id = snapshot_manager.capture(action_name, target)
+                logger.debug(f"[{req.task_id}] High-risk action detected ({validation['risk_level']}). Captured snapshot ID: {snapshot_id}")
 
             # 실행
+            logger.debug(f"[{req.task_id}] Executing action '{action_name}' on target '{target}'")
             exec_res = OptimizerExecutor.execute_action(action_name, target)
             exec_res["risk_level"] = validation["risk_level"]
             if snapshot_id:
                 exec_res["snapshot_id"] = snapshot_id
 
+            logger.debug(f"[{req.task_id}] Action '{action_name}' execution result: {exec_res}")
+
             # 검증
             verification = verifier.verify(before_status)
+            logger.debug(f"[{req.task_id}] Post-execution verification result: {verification}")
             if not verification["success"] and snapshot_id:
+                logger.debug(f"[{req.task_id}] Verification failed. Triggering rollback for snapshot ID: {snapshot_id}")
                 snapshot_manager.rollback(snapshot_id)
                 exec_res["rollback"] = True
 
             actions_result.append(exec_res)
 
         after_status = aggregator.collect_system_status()
+        logger.debug(f"[{req.task_id}] Diagnostic & Optimization pipeline finished successfully.")
 
         result_data = {
             "task_id": req.task_id,
