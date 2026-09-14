@@ -28,7 +28,7 @@ class WindowsOptimizer:
                             deleted += 1
                     except Exception as err:
                         failed += 1
-                        logger.debug(f"Failed to delete temp item '{item_path}': {err}")
+                        logger.error(f"Failed to delete temp item '{item_path}': {err}")
                 result["message"] = f"Windows temp cleaned. Deleted: {deleted}, Failed: {failed}"
                 logger.debug(f"clean_temp result: {result['message']}")
 
@@ -41,7 +41,7 @@ class WindowsOptimizer:
                 else:
                     result["status"] = "PARTIAL_SUCCESS"
                     result["message"] = f"Recycle bin cleared with output: {res.stderr.strip()}"
-                    logger.debug(f"clean_recycle_bin non-zero exit code: {res.returncode}, stderr: {res.stderr.strip()}")
+                    logger.error(f"clean_recycle_bin non-zero exit code: {res.returncode}, stderr: {res.stderr.strip()}")
 
             elif action_name == "disable_startup_program":
                 if target and target != "general":
@@ -71,11 +71,11 @@ class WindowsOptimizer:
                     else:
                         result["status"] = "FAILED"
                         result["message"] = f"Failed to remove startup program '{target}' or not found in registry. Details: {res.stderr.strip() or 'Registry key not found'}"
-                        logger.debug(f"disable_startup_program failed for '{target}': returncode={res.returncode}, stderr={res.stderr.strip()}")
+                        logger.error(f"disable_startup_program failed for '{target}': returncode={res.returncode}, stderr={res.stderr.strip()}")
                 else:
                     result["status"] = "FAILED"
                     result["message"] = "Invalid target specified for disabling startup program."
-                    logger.debug(f"disable_startup_program rejected invalid target: '{target}'")
+                    logger.error(f"disable_startup_program rejected invalid target: '{target}'")
 
             elif action_name == "stop_service":
                 if target and target != "general":
@@ -87,7 +87,7 @@ class WindowsOptimizer:
                     else:
                         result["status"] = "FAILED"
                         result["message"] = f"Failed to stop Windows service '{target}': {res.stderr.strip()}"
-                        logger.debug(f"stop_service failed for '{target}': stderr={res.stderr.strip()}")
+                        logger.error(f"stop_service failed for '{target}': stderr={res.stderr.strip()}")
                 else:
                     result["message"] = f"Service '{target}' stop processed."
                     logger.debug(f"stop_service processed with generic target: '{target}'")
@@ -96,15 +96,18 @@ class WindowsOptimizer:
                 cmd = 'powershell "Stop-Service -Name wuauserv -Force -ErrorAction SilentlyContinue; $path = \\"$env:systemroot\\SoftwareDistribution\\Download\\*\"; Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue; Start-Service -Name wuauserv -ErrorAction SilentlyContinue"'
                 logger.debug("Executing clean_windows_update_cache")
                 res = subprocess.run(cmd, capture_output=True, text=True, shell=True, timeout=15)
-                logger.debug(f"clean_windows_update_cache returncode={res.returncode}, stderr={res.stderr.strip()}")
+                if res.returncode != 0:
+                    logger.error(f"clean_windows_update_cache returncode={res.returncode}, stderr={res.stderr.strip()}")
+                else:
+                    logger.debug(f"clean_windows_update_cache completed successfully.")
                 result["message"] = "Windows Update cache cleaned and service restarted."
 
             else:
                 result["status"] = "FAILED"
                 result["message"] = f"Unknown Windows action: {action_name}"
-                logger.debug(f"Unknown Windows action requested: {action_name}")
+                logger.error(f"Unknown Windows action requested: {action_name}")
         except Exception as e:
             result["status"] = "FAILED"
             result["message"] = str(e)
-            logger.debug(f"Exception encountered during WindowsOptimizer.execute({action_name}): {e}", exc_info=True)
+            logger.error(f"Exception encountered during WindowsOptimizer.execute({action_name}): {e}", exc_info=True)
         return result

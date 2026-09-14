@@ -97,7 +97,7 @@ async def diagnose(req: RunTaskRequest, authorization: Optional[str] = Header(No
                 import json
                 analysis = json.loads(analysis)
             except Exception as parse_err:
-                logger.debug(f"[{req.task_id}] Failed to parse analysis JSON string: {parse_err}")
+                logger.error(f"[{req.task_id}] Failed to parse analysis JSON string: {parse_err}")
                 analysis = {
                     "problem": "Analysis Error",
                     "root_cause": "LLM returned invalid string format",
