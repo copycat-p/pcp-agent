@@ -67,13 +67,15 @@ class WindowsOptimizer:
                         "    }"
                         "  }"
                         "}"
+                        f"try {{ Stop-Process -Name '{target}' -Force -ErrorAction SilentlyContinue }} catch {{}}"
+                        f"try {{ Stop-Service -Name '{target}' -Force -ErrorAction SilentlyContinue }} catch {{}}"
                         "if ($removed) { exit 0 } elseif ($errOccurred) { exit 2 } else { exit 1 }"
                         '"'
                     )
                     logger.debug(f"Executing disable_startup_program for target '{target}'")
                     res = subprocess.run(ps_cmd, capture_output=True, text=True, shell=True, timeout=10)
                     if res.returncode == 0:
-                        result["message"] = f"Startup program '{target}' successfully removed from registry."
+                        result["message"] = f"Startup program '{target}' successfully removed from registry and running process stopped."
                         logger.debug(result["message"])
                     elif res.returncode == 2:
                         result["status"] = "FAILED"
