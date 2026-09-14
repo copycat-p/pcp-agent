@@ -19,8 +19,8 @@ from server.auth_middleware import AuthMiddleware
 from resilience.task_persistence import TaskPersistence, ResultBuffer
 
 logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-logger = logging.getLogger("PCPerformanceAgent")
-logger.setLevel(logging.DEBUG)
+logger = logging.getLogger(__name__)
+#logger.setLevel(logging.DEBUG)
 
 # 1. 설정 로드
 with open("config/agent_config.yaml", "r", encoding="utf-8") as f:

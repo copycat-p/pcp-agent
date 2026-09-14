@@ -38,6 +38,7 @@ class WindowsOptimizer:
                 res = subprocess.run(cmd, capture_output=True, text=True, shell=True, timeout=10)
                 if res.returncode == 0:
                     result["message"] = "Windows recycle bin emptied successfully."
+                    logger.debug(result["message"])
                 else:
                     result["status"] = "PARTIAL_SUCCESS"
                     result["message"] = f"Recycle bin cleared with output: {res.stderr.strip()}"
@@ -54,24 +55,34 @@ class WindowsOptimizer:
                         "'HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce'"
                         ");"
                         "$removed = $false;"
+                        "$errOccurred = $false;"
                         "foreach ($p in $paths) {"
                         f"  $prop = Get-ItemProperty -Path $p -ErrorAction SilentlyContinue;"
                         f"  if ($prop -and $prop.'{target}' -ne $null) {{"
-                        f"    Remove-ItemProperty -Path $p -Name '{target}' -Force -ErrorAction SilentlyContinue;"
-                        "    $removed = $true;"
+                        "    try {"
+                        f"      Remove-ItemProperty -Path $p -Name '{target}' -Force -ErrorAction Stop;"
+                        "      $removed = $true;"
+                        "    } catch {"
+                        "      $errOccurred = $true;"
+                        "    }"
                         "  }"
                         "}"
-                        "if ($removed) { exit 0 } else { exit 1 }"
+                        "if ($removed) { exit 0 } elseif ($errOccurred) { exit 2 } else { exit 1 }"
                         '"'
                     )
                     logger.debug(f"Executing disable_startup_program for target '{target}'")
                     res = subprocess.run(ps_cmd, capture_output=True, text=True, shell=True, timeout=10)
                     if res.returncode == 0:
                         result["message"] = f"Startup program '{target}' successfully removed from registry."
+                        logger.debug(result["message"])
+                    elif res.returncode == 2:
+                        result["status"] = "FAILED"
+                        result["message"] = f"Failed to remove startup program '{target}': Permission denied (Requires Administrator privileges)."
+                        logger.error(result["message"])
                     else:
                         result["status"] = "FAILED"
-                        result["message"] = f"Failed to remove startup program '{target}' or not found in registry. Details: {res.stderr.strip() or 'Registry key not found'}"
-                        logger.error(f"disable_startup_program failed for '{target}': returncode={res.returncode}, stderr={res.stderr.strip()}")
+                        result["message"] = f"Startup program '{target}' not found in registry."
+                        logger.error(f"disable_startup_program: '{target}' not found in registry.")
                 else:
                     result["status"] = "FAILED"
                     result["message"] = "Invalid target specified for disabling startup program."
